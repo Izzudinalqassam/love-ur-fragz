@@ -35,7 +35,10 @@ const EnhancedReviewStats: React.FC<EnhancedReviewStatsProps> = ({
 }) => {
   // Helper functions
   const getPercentage = (value: number, total: number): number => {
-    return total > 0 ? Math.round((value / total) * 100) : 0;
+    if (isNaN(value) || isNaN(total) || !isFinite(value) || !isFinite(total) || total <= 0) {
+      return 0;
+    }
+    return Math.round((value / total) * 100);
   };
 
   const getLongevityPercentage = (rating: string): number => {
@@ -61,13 +64,14 @@ const EnhancedReviewStats: React.FC<EnhancedReviewStatsProps> = ({
   };
 
   const renderRatingBars = () => {
-    const total = stats.total_reviews;
-    const maxCount = Math.max(...Object.values(stats.rating_distribution));
+    const total = stats.total_reviews || 0;
+    const distributionValues = Object.values(stats.rating_distribution || {});
+    const maxCount = distributionValues.length > 0 ? Math.max(...distributionValues) : 0;
 
     return (
       <div className="space-y-2">
         {[5, 4, 3, 2, 1].map((rating) => {
-          const count = stats.rating_distribution[rating as keyof typeof stats.rating_distribution];
+          const count = stats.rating_distribution?.[rating] || 0;
           const percentage = getPercentage(count, total);
           const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
 
@@ -99,8 +103,9 @@ const EnhancedReviewStats: React.FC<EnhancedReviewStatsProps> = ({
   };
 
   const renderAverageRating = () => {
-    const fullStars = Math.floor(stats.average_rating);
-    const hasHalfStar = stats.average_rating % 1 >= 0.5;
+    const rating = isNaN(stats.average_rating) || !isFinite(stats.average_rating) ? 0 : stats.average_rating;
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
     return (
@@ -120,7 +125,7 @@ const EnhancedReviewStats: React.FC<EnhancedReviewStatsProps> = ({
           <Star key={`empty-${i}`} className="w-5 h-5 text-gray-300 fill-current" />
         ))}
         <span className="ml-2 text-lg font-bold text-gray-900">
-          {stats.average_rating.toFixed(1)}
+          {rating.toFixed(1)}
         </span>
       </div>
     );
@@ -183,9 +188,9 @@ const EnhancedReviewStats: React.FC<EnhancedReviewStatsProps> = ({
                     <span className="font-medium">Longevity</span>
                   </div>
                   <div className="text-2xl font-bold text-blue-900 mb-1">
-                    {stats.average_longevity.toFixed(1)}/5
+                    {(isNaN(stats.average_longevity) || !isFinite(stats.average_longevity) ? 0 : stats.average_longevity).toFixed(1)}/5
                   </div>
-                  <Progress value={stats.average_longevity * 20} className="mb-2" />
+                  <Progress value={(isNaN(stats.average_longevity) || !isFinite(stats.average_longevity) ? 0 : stats.average_longevity) * 20} className="mb-2" />
                   <p className="text-xs text-blue-700">
                     {stats.average_longevity >= 4 ? 'Long-lasting' :
                      stats.average_longevity >= 3 ? 'Average duration' :
@@ -200,9 +205,9 @@ const EnhancedReviewStats: React.FC<EnhancedReviewStatsProps> = ({
                     <span className="font-medium">Sillage</span>
                   </div>
                   <div className="text-2xl font-bold text-green-900 mb-1">
-                    {stats.average_sillage.toFixed(1)}/5
+                    {(isNaN(stats.average_sillage) || !isFinite(stats.average_sillage) ? 0 : stats.average_sillage).toFixed(1)}/5
                   </div>
-                  <Progress value={stats.average_sillage * 20} className="mb-2" />
+                  <Progress value={(isNaN(stats.average_sillage) || !isFinite(stats.average_sillage) ? 0 : stats.average_sillage) * 20} className="mb-2" />
                   <p className="text-xs text-green-700">
                     {stats.average_sillage >= 4 ? 'Strong projection' :
                      stats.average_sillage >= 3 ? 'Moderate projection' :
@@ -217,9 +222,9 @@ const EnhancedReviewStats: React.FC<EnhancedReviewStatsProps> = ({
                     <span className="font-medium">Value</span>
                   </div>
                   <div className="text-2xl font-bold text-purple-900 mb-1">
-                    {stats.average_value.toFixed(1)}/5
+                    {(isNaN(stats.average_value) || !isFinite(stats.average_value) ? 0 : stats.average_value).toFixed(1)}/5
                   </div>
-                  <Progress value={stats.average_value * 20} className="mb-2" />
+                  <Progress value={(isNaN(stats.average_value) || !isFinite(stats.average_value) ? 0 : stats.average_value) * 20} className="mb-2" />
                   <p className="text-xs text-purple-700">
                     {stats.average_value >= 4 ? 'Great value' :
                      stats.average_value >= 3 ? 'Fair value' :

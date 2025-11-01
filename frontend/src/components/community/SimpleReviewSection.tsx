@@ -232,7 +232,7 @@ const SimpleReviewSection: React.FC<SimpleReviewSectionProps> = ({
         ) : (
           filteredReviews.map((review, index) => (
             <EnhancedReviewCard
-              key={review.id}
+              key={`review-${review.id || index}-${review.user_name}-${index}`}
               review={review}
               showPerfumeInfo={false}
               showActions={true}
