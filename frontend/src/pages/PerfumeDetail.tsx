@@ -19,18 +19,17 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import NotesDisplay from '@/components/perfume/NotesDisplay';
 import PerfumeCharacteristics from '@/components/perfume/PerfumeCharacteristics';
 import AromaTags from '@/components/perfume/AromaTags';
-import LikeDislikeButton from '@/components/community/LikeDislikeButton';
-import CommentSection from '@/components/community/CommentSection';
+import { SimpleReviewSection } from '@/components/community';
 import useCommunityStore from '@/stores/communityStore';
 import type { Perfume } from '@/types';
-import type { PerfumeReview, PerfumeReviewStats } from '@/types/community';
+import type { EnhancedPerfumeReviewStats } from '@/types/community';
 
 const PerfumeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Use community store for persistent data
-  const { getReviews, getReviewStats, updateReviewStats } = useCommunityStore();
+  // Use community store for enhanced reviews
+  const { getEnhancedReviewStats } = useCommunityStore();
 
   const {
     data: perfume,
@@ -42,24 +41,9 @@ const PerfumeDetail: React.FC = () => {
     enabled: !!id,
   });
 
-  // Get real data from store
+  // Get enhanced review data
   const perfumeId = Number(id);
-  const storeReviews = getReviews(perfumeId);
-  const storeStats = getReviewStats(perfumeId);
-
-  // Initialize with default data if store is empty
-  React.useEffect(() => {
-    if (!getReviewStats(perfumeId)) {
-      // Initialize with empty stats if no data exists
-      updateReviewStats(perfumeId, {
-        perfume_id: perfumeId,
-        total_likes: 0,
-        total_dislikes: 0,
-        total_comments: 0,
-        average_rating: 0
-      });
-    }
-  }, [perfumeId, getReviewStats, updateReviewStats]);
+  const enhancedStats = getEnhancedReviewStats(perfumeId);
 
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite);
@@ -80,32 +64,7 @@ const PerfumeDetail: React.FC = () => {
     }
   };
 
-  const handleReviewSubmit = (data: {
-    perfumeId: number;
-    userName: string;
-    rating: 'like' | 'dislike';
-    comment?: string;
-  }) => {
-    // TODO: Implement API call to submit review
-    console.log('Review submitted:', data);
-
-    // This will be handled by the LikeDislikeButton component itself
-    // No need to manually update state here as the store handles it
-  };
-
-  const handleAddComment = (data: {
-    perfumeId: number;
-    userName: string;
-    comment: string;
-    rating: 'like' | 'dislike';
-  }) => {
-    // TODO: Implement API call to add comment
-    console.log('Comment added:', data);
-
-    // This will be handled by the CommentSection component itself
-    // No need to manually update state here as the store handles it
-  };
-
+  
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -133,8 +92,7 @@ const PerfumeDetail: React.FC = () => {
     );
   }
 
-  const allReviews = storeReviews;
-
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -188,28 +146,27 @@ const PerfumeDetail: React.FC = () => {
               </div>
             </Card>
 
-            {/* Community Stats */}
+            {/* Enhanced Community Stats */}
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Community Opinion
+                Community Reviews
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{storeStats?.total_likes || 0}</div>
-                  <div className="text-sm text-green-700">Likes</div>
+                  <div className="text-2xl font-bold text-green-600">{enhancedStats?.total_reviews || 0}</div>
+                  <div className="text-sm text-green-700">Reviews</div>
                 </div>
-                <div className="text-center p-4 bg-red-50 rounded-lg">
-                  <div className="text-2xl font-bold text-red-600">{storeStats?.total_dislikes || 0}</div>
-                  <div className="text-sm text-red-700">Dislikes</div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {enhancedStats ? (enhancedStats.average_overall_rating || 0).toFixed(1) : '0.0'}
+                  </div>
+                  <div className="text-sm text-purple-700">Avg Rating</div>
                 </div>
               </div>
               <div className="mt-4 text-center">
-                <div className="text-lg font-semibold text-gray-900">
-                  {(storeStats?.average_rating || 0).toFixed(1)}/5.0
-                </div>
                 <div className="text-sm text-gray-600">
-                  {storeStats?.total_comments || 0} reviews
+                  {enhancedStats?.would_repurchase_percentage || 0}% would buy again
                 </div>
               </div>
             </Card>
@@ -229,16 +186,6 @@ const PerfumeDetail: React.FC = () => {
                 <Badge variant="outline" className="capitalize">
                   {perfume.target_audience}
                 </Badge>
-              </div>
-
-              {/* Community Rating */}
-              <div className="flex items-center gap-4 mb-6">
-                <LikeDislikeButton
-                  perfumeId={perfume.id}
-                  initialStats={storeStats || undefined}
-                  onReviewSubmit={handleReviewSubmit}
-                  variant="compact"
-                />
               </div>
             </div>
 
@@ -289,13 +236,14 @@ const PerfumeDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Comments Section */}
+        {/* Simple Reviews Section */}
         <div className="mt-12">
-          <CommentSection
+          <SimpleReviewSection
             perfumeId={perfume.id}
-            comments={allReviews}
-            onAddComment={handleAddComment}
-            maxVisible={5}
+            perfumeName={perfume.name}
+            perfumeBrand={perfume.brand}
+            showForm={true}
+            showStats={true}
           />
         </div>
       </div>

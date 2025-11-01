@@ -7,6 +7,7 @@ import (
 	"perfume-website/internal/db"
 	"perfume-website/internal/handlers"
 	"perfume-website/internal/middleware"
+	"perfume-website/internal/models"
 	"perfume-website/internal/repositories"
 	"perfume-website/internal/services"
 
@@ -34,18 +35,26 @@ func main() {
 	perfumeRepo := repositories.NewPerfumeRepository(database.GetDB())
 	aromaRepo := repositories.NewAromaRepository(database.GetDB())
 	quizRepo := repositories.NewQuizRepository(database.GetDB())
+	enhancedReviewRepo := models.NewEnhancedReviewRepositoryGORM(database.GetDB())
+
+	// Run auto migration for enhanced reviews
+	if err := enhancedReviewRepo.AutoMigrate(); err != nil {
+		log.Fatalf("Failed to auto-migrate enhanced reviews: %v", err)
+	}
 
 	// Initialize services
 	authService := services.NewAuthService(adminRepo, cfg.JWTSecret)
 	perfumeService := services.NewPerfumeService(perfumeRepo, aromaRepo)
 	aromaService := services.NewAromaService(aromaRepo)
 	quizService := services.NewQuizService(*quizRepo, perfumeRepo, aromaRepo)
+	enhancedReviewService := services.NewEnhancedReviewService(enhancedReviewRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	perfumeHandler := handlers.NewPerfumeHandler(perfumeService)
 	aromaHandler := handlers.NewAromaHandler(aromaService)
 	quizHandler := handlers.NewQuizHandler(quizService)
+	enhancedReviewHandler := handlers.NewEnhancedReviewHandler(enhancedReviewService)
 
 	// Set Gin mode
 	if cfg.Environment == "production" {
@@ -94,6 +103,14 @@ func main() {
 		api.POST("/quiz/save", quizHandler.SaveQuizResponse)
 		api.GET("/quiz/stats", quizHandler.GetQuizStats)
 		api.GET("/quiz/personality-types", quizHandler.GetPersonalityTypes)
+
+		// Enhanced Review endpoints
+		api.POST("/enhanced-reviews", enhancedReviewHandler.CreateEnhancedReview)
+		api.GET("/enhanced-reviews", enhancedReviewHandler.GetEnhancedReviews)
+		api.GET("/enhanced-reviews/stats", enhancedReviewHandler.GetEnhancedReviewStats)
+		api.GET("/enhanced-reviews/:id", enhancedReviewHandler.GetReviewByID)
+		api.POST("/enhanced-reviews/:id/helpful", enhancedReviewHandler.MarkReviewHelpful)
+		api.POST("/enhanced-reviews/:id/report", enhancedReviewHandler.ReportReview)
 	}
 
 	// Protected routes (admin only)
