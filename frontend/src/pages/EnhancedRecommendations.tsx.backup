@@ -1,0 +1,901 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Search, Sparkles, Heart, Star, ArrowRight, RefreshCw, ChevronRight, ChevronLeft, User, Calendar, Sun, Moon, Briefcase, Coffee } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
+import { Card, CardContent } from '../components/ui/Card';
+import { LoadingSkeleton } from '../components/ui/LoadingSkeleton';
+
+const EnhancedRecommendations = () => {
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [recommendations, setRecommendations] = useState(null);
+  const [quizData, setQuizData] = useState({
+    // Basic Info
+    name: '',
+    email: '',
+    age: '',
+    gender: '',
+    lifestyle: '',
+
+    // Preferences
+    dailyWear: false,
+    specialEvents: false,
+    nightOut: false,
+    work: false,
+    dates: false,
+
+    spring: false,
+    summer: false,
+    fall: false,
+    winter: false,
+    yearRound: false,
+
+    lightFresh: false,
+    warmSpicy: false,
+    sweetGourmand: false,
+    woodyEarthy: false,
+    floralRomantic: false,
+    citrusEnergizing: false,
+
+    longevity: 'medium',
+    sillage: 'moderate',
+    projection: 'moderate',
+
+    classic: false,
+    modern: false,
+    unique: false,
+    safeBet: false,
+
+    priceRange: 'mid',
+
+    // Current Situation
+    currentSituation: 'casual',
+    season: 'spring',
+    timeOfDay: 'morning',
+    desiredImpression: 'confident'
+  });
+
+  const totalSteps = 4;
+
+  const lifestyleOptions = [
+    { value: 'active', label: 'Active & Athletic', icon: '🏃‍♀️', description: 'Always on the go, need fresh and energizing scents' },
+    { value: 'relaxed', label: 'Relaxed & Casual', icon: '☕', description: 'Comfort-loving, prefer subtle and comforting fragrances' },
+    { value: 'professional', label: 'Professional & Ambitious', icon: '💼', description: 'Career-focused, need sophisticated workplace-appropriate scents' },
+    { value: 'creative', label: 'Creative & Artistic', icon: '🎨', description: 'Expressive and unique, love artistic and unconventional scents' }
+  ];
+
+  const scentProfiles = [
+    {
+      key: 'lightFresh',
+      label: 'Light & Fresh',
+      icon: '🌤️',
+      description: 'Citrus, green, aquatic notes',
+      colors: 'from-green-100 to-blue-100 border-green-300'
+    },
+    {
+      key: 'warmSpicy',
+      label: 'Warm & Spicy',
+      icon: '🔥',
+      description: 'Spices, woods, amber notes',
+      colors: 'from-orange-100 to-red-100 border-orange-300'
+    },
+    {
+      key: 'sweetGourmand',
+      label: 'Sweet & Gourmand',
+      icon: '🍰',
+      description: 'Vanilla, chocolate, dessert notes',
+      colors: 'from-pink-100 to-purple-100 border-pink-300'
+    },
+    {
+      key: 'woodyEarthy',
+      label: 'Woody & Earthy',
+      icon: '🌳',
+      description: 'Sandalwood, cedar, vetiver notes',
+      colors: 'from-amber-100 to-yellow-100 border-amber-300'
+    },
+    {
+      key: 'floralRomantic',
+      label: 'Floral & Romantic',
+      icon: '🌸',
+      description: 'Rose, jasmine, peony notes',
+      colors: 'from-rose-100 to-pink-100 border-rose-300'
+    },
+    {
+      key: 'citrusEnergizing',
+      label: 'Citrus & Energizing',
+      icon: '🍊',
+      description: 'Lemon, bergamot, grapefruit notes',
+      colors: 'from-yellow-100 to-lime-100 border-yellow-300'
+    }
+  ];
+
+  const handleNext = () => {
+    if (step < totalSteps) {
+      setStep(step + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handlePrevious = () => {
+    if (step > 1) {
+      setStep(step - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleQuizSubmit = async () => {
+    setLoading(true);
+    try {
+      // Simulate API call to advanced recommendation engine
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Mock response - in real app, this would call the advanced API
+      const mockResponse = {
+        results: [
+          {
+            perfume: {
+              id: 1,
+              name: "Midnight Romance",
+              brand: "Luxury Collection",
+              description: "An enchanting blend of rose and vanilla with warm amber base",
+              price: 120,
+              category: "Floriental",
+              longevity: "Long-lasting (8+ hours)",
+              projection: "Moderate - Noticeable in close proximity"
+            },
+            overallScore: 0.92,
+            profileMatch: 0.95,
+            seasonMatch: 0.88,
+            occasionMatch: 0.90,
+            performanceMatch: 0.85,
+            uniquenessBonus: 0.75,
+            matchReasons: [
+              "Perfect match for your romantic and elegant personality",
+              "Ideal for evening dates and special occasions",
+              "Matches your preference for warm, romantic scents"
+            ],
+            bestFor: ["Date Nights", "Special Events", "Evening Wear"],
+            wearTiming: ["Apply 30 mins before", "Perfect for evening", "Long-lasting for special moments"],
+            confidence: 0.94,
+            rank: 1
+          }
+        ],
+        personalityAnalysis: {
+          scentPersonality: "The Romantic Elegant",
+          keyTraits: ["Sophisticated", "Charming", "Timeless"],
+          styleDescription: "You appreciate classic, romantic fragrances that exude elegance and grace.",
+          recommendationStyle: "Based on your Romantic Elegant personality, we recommend fragrances that reflect your sophisticated, charming, timeless nature."
+        },
+        recommendationLogic: {
+          algorithm: "Multi-Factor Advanced Recommendation v2.0",
+          factorsConsidered: ["Profile Match", "Season Suitability", "Occasion Appropriateness"],
+          processDescription: "Our advanced algorithm analyzes your personality traits and preferences to find perfect matches."
+        },
+        tips: [
+          "Apply fragrance to pulse points for better longevity",
+          "Save your most romantic scents for special occasions",
+          "Layer with matching body products for enhanced wear"
+        ]
+      };
+
+      setRecommendations(mockResponse);
+    } catch (error) {
+      console.error('Error getting recommendations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateQuizData = (field: string, value: any) => {
+    setQuizData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetQuiz = () => {
+    setStep(1);
+    setRecommendations(null);
+    // Reset quiz data to initial values
+    setQuizData({
+      name: '', email: '', age: '', gender: '', lifestyle: '',
+      dailyWear: false, specialEvents: false, nightOut: false, work: false, dates: false,
+      spring: false, summer: false, fall: false, winter: false, yearRound: false,
+      lightFresh: false, warmSpicy: false, sweetGourmand: false, woodyEarthy: false,
+      floralRomantic: false, citrusEnergizing: false,
+      longevity: 'medium', sillage: 'moderate', projection: 'moderate',
+      classic: false, modern: false, unique: false, safeBet: false,
+      priceRange: 'mid', currentSituation: 'casual', season: 'spring',
+      timeOfDay: 'morning', desiredImpression: 'confident'
+    });
+  };
+
+  // Progress indicator
+  const renderProgress = () => (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        {[...Array(totalSteps)].map((_, i) => (
+          <div key={i} className="flex items-center">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+              i + 1 <= step
+                ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg scale-110'
+                : 'bg-gray-200 text-gray-500'
+            }`}>
+              {i + 1}
+            </div>
+            {i < totalSteps - 1 && (
+              <div className={`h-1 w-16 mx-2 rounded-full transition-all duration-300 ${
+                i + 1 < step ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'bg-gray-200'
+              }`} />
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="text-center text-sm text-gray-600">
+        Step {step} of {totalSteps}
+      </div>
+    </div>
+  );
+
+  // Step 1: Basic Information
+  const renderBasicInfo = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full mb-4">
+          <User className="h-8 w-8 text-purple-600" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 font-serif mb-3">
+          Let's Get to Know You
+        </h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Tell us about yourself so we can find your perfect fragrance match
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
+          <input
+            type="text"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="Enter your name"
+            value={quizData.name}
+            onChange={(e) => updateQuizData('name', e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+          <input
+            type="email"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="your@email.com"
+            value={quizData.email}
+            onChange={(e) => updateQuizData('email', e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Age Range</label>
+          <select
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            value={quizData.age}
+            onChange={(e) => updateQuizData('age', e.target.value)}
+          >
+            <option value="">Select age range</option>
+            <option value="18-25">18-25</option>
+            <option value="26-35">26-35</option>
+            <option value="36-45">36-45</option>
+            <option value="46-55">46-55</option>
+            <option value="56+">56+</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+          <select
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            value={quizData.gender}
+            onChange={(e) => updateQuizData('gender', e.target.value)}
+          >
+            <option value="">Select gender</option>
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="other">Other</option>
+            <option value="prefer-not-to-say">Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-4">Your Lifestyle</label>
+        <div className="grid md:grid-cols-2 gap-4">
+          {lifestyleOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => updateQuizData('lifestyle', option.value)}
+              className={`p-4 rounded-xl border-2 transition-all duration-300 text-left hover:scale-105 ${
+                quizData.lifestyle === option.value
+                  ? 'border-purple-500 bg-purple-50 shadow-lg'
+                  : 'border-gray-200 bg-white hover:border-purple-300'
+              }`}
+            >
+              <div className="flex items-center mb-2">
+                <span className="text-2xl mr-3">{option.icon}</span>
+                <span className="font-semibold text-gray-900">{option.label}</span>
+              </div>
+              <p className="text-sm text-gray-600">{option.description}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 2: Occasion & Season Preferences
+  const renderOccasionSeason = () => (
+    <div className="space-y-8">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full mb-4">
+          <Calendar className="h-8 w-8 text-purple-600" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 font-serif mb-3">
+          When & Where Will You Wear It?
+        </h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Tell us about your fragrance needs for different occasions and seasons
+        </p>
+      </div>
+
+      <div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+          <Briefcase className="h-5 w-5 mr-2 text-purple-600" />
+          Occasion Preferences
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">Select all occasions where you'll wear fragrance</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {[
+            { key: 'dailyWear', label: 'Daily Wear', icon: '☕' },
+            { key: 'specialEvents', label: 'Special Events', icon: '🎉' },
+            { key: 'nightOut', label: 'Night Out', icon: '🌃' },
+            { key: 'work', label: 'Work/Office', icon: '💼' },
+            { key: 'dates', label: 'Dates', icon: '💕' }
+          ].map((occasion) => (
+            <button
+              key={occasion.key}
+              onClick={() => updateQuizData(occasion.key, !quizData[occasion.key])}
+              className={`p-4 rounded-lg border-2 transition-all duration-300 text-left hover:scale-105 ${
+                quizData[occasion.key]
+                  ? 'border-purple-500 bg-purple-50 shadow-md'
+                  : 'border-gray-200 bg-white hover:border-purple-300'
+              }`}
+            >
+              <div className="flex items-center">
+                <span className="text-2xl mr-2">{occasion.icon}</span>
+                <span className="font-medium text-gray-900">{occasion.label}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+          <Sun className="h-5 w-5 mr-2 text-purple-600" />
+          Seasonal Preferences
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">Which seasons do you prefer certain fragrances for?</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {[
+            { key: 'spring', label: 'Spring', icon: '🌸', colors: 'from-green-50 to-pink-50 border-green-200' },
+            { key: 'summer', label: 'Summer', icon: '☀️', colors: 'from-yellow-50 to-orange-50 border-yellow-200' },
+            { key: 'fall', label: 'Fall', icon: '🍂', colors: 'from-orange-50 to-red-50 border-orange-200' },
+            { key: 'winter', label: 'Winter', icon: '❄️', colors: 'from-blue-50 to-purple-50 border-blue-200' },
+            { key: 'yearRound', label: 'Year Round', icon: '🌍', colors: 'from-purple-50 to-gray-50 border-purple-200' }
+          ].map((season) => (
+            <button
+              key={season.key}
+              onClick={() => updateQuizData(season.key, !quizData[season.key])}
+              className={`p-4 rounded-lg border-2 transition-all duration-300 text-left hover:scale-105 ${
+                quizData[season.key]
+                  ? `border-purple-500 bg-purple-50 shadow-md`
+                  : `border-gray-200 bg-white hover:border-purple-300`
+              }`}
+            >
+              <div className="flex items-center">
+                <span className="text-2xl mr-2">{season.icon}</span>
+                <span className="font-medium text-gray-900">{season.label}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 3: Scent Preferences
+  const renderScentPreferences = () => (
+    <div className="space-y-8">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full mb-4">
+          <Heart className="h-8 w-8 text-purple-600" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 font-serif mb-3">
+          What Scents Speak to You?
+        </h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Choose the scent profiles that make you feel amazing and confident
+        </p>
+      </div>
+
+      <div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Scent Personality</h3>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {scentProfiles.map((profile) => (
+            <button
+              key={profile.key}
+              onClick={() => updateQuizData(profile.key, !quizData[profile.key])}
+              className={`p-5 rounded-xl border-2 transition-all duration-300 text-left hover:scale-105 ${
+                quizData[profile.key]
+                  ? 'border-purple-500 bg-gradient-to-br ' + profile.colors + ' shadow-lg'
+                  : 'border-gray-200 bg-white hover:border-purple-300'
+              }`}
+            >
+              <div className="flex items-center mb-2">
+                <span className="text-3xl mr-3">{profile.icon}</span>
+                <span className="font-bold text-gray-900">{profile.label}</span>
+              </div>
+              <p className="text-sm text-gray-600">{profile.description}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-6">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Longevity Preference</h3>
+          <div className="space-y-2">
+            {[
+              { value: 'light', label: 'Light (4-6 hours)', desc: 'Subtle, disappears by evening' },
+              { value: 'medium', label: 'Medium (6-8 hours)', desc: 'Lasts through work day' },
+              { value: 'long', label: 'Long (8+ hours)', desc: 'All-day staying power' }
+            ].map((option) => (
+              <button
+                key={option.value}
+                onClick={() => updateQuizData('longevity', option.value)}
+                className={`w-full p-3 rounded-lg border-2 text-left transition-all duration-300 ${
+                  quizData.longevity === option.value
+                    ? 'border-purple-500 bg-purple-50'
+                    : 'border-gray-200 bg-white hover:border-purple-300'
+                }`}
+              >
+                <div className="font-medium text-gray-900">{option.label}</div>
+                <div className="text-sm text-gray-600">{option.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Sillage (Projection)</h3>
+          <div className="space-y-2">
+            {[
+              { value: 'subtle', label: 'Subtle', desc: 'Close to skin, personal scent' },
+              { value: 'moderate', label: 'Moderate', desc: 'Noticeable in close proximity' },
+              { value: 'heavy', label: 'Heavy', desc: 'Noticeable from afar' }
+            ].map((option) => (
+              <button
+                key={option.value}
+                onClick={() => updateQuizData('sillage', option.value)}
+                className={`w-full p-3 rounded-lg border-2 text-left transition-all duration-300 ${
+                  quizData.sillage === option.value
+                    ? 'border-purple-500 bg-purple-50'
+                    : 'border-gray-200 bg-white hover:border-purple-300'
+                }`}
+              >
+                <div className="font-medium text-gray-900">{option.label}</div>
+                <div className="text-sm text-gray-600">{option.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Style Preference</h3>
+          <div className="space-y-2">
+            {[
+              { key: 'classic', label: 'Classic', desc: 'Timeless, traditional scents' },
+              { key: 'modern', label: 'Modern', desc: 'Contemporary, trendy fragrances' },
+              { key: 'unique', label: 'Unique', desc: 'Rare, distinctive scents' },
+              { key: 'safeBet', label: 'Safe Bet', desc: 'Crowd-pleasing, foolproof' }
+            ].map((option) => (
+              <button
+                key={option.key}
+                onClick={() => updateQuizData(option.key, !quizData[option.key])}
+                className={`w-full p-3 rounded-lg border-2 text-left transition-all duration-300 ${
+                  quizData[option.key]
+                    ? 'border-purple-500 bg-purple-50'
+                    : 'border-gray-200 bg-white hover:border-purple-300'
+                }`}
+              >
+                <div className="font-medium text-gray-900">{option.label}</div>
+                <div className="text-sm text-gray-600">{option.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 4: Current Situation
+  const renderCurrentSituation = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full mb-4">
+          <Sparkles className="h-8 w-8 text-purple-600" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 font-serif mb-3">
+          Current Situation
+        </h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Tell us about your current needs for the most accurate recommendations
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Current Occasion</label>
+          <select
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            value={quizData.currentSituation}
+            onChange={(e) => updateQuizData('currentSituation', e.target.value)}
+          >
+            <option value="casual">Casual Outing</option>
+            <option value="work">Work/Office</option>
+            <option value="date">Date Night</option>
+            <option value="special">Special Event</option>
+            <option value="evening">Evening Out</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Current Season</label>
+          <select
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            value={quizData.season}
+            onChange={(e) => updateQuizData('season', e.target.value)}
+          >
+            <option value="spring">Spring</option>
+            <option value="summer">Summer</option>
+            <option value="fall">Fall</option>
+            <option value="winter">Winter</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Time of Day</label>
+          <select
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            value={quizData.timeOfDay}
+            onChange={(e) => updateQuizData('timeOfDay', e.target.value)}
+          >
+            <option value="morning">Morning</option>
+            <option value="afternoon">Afternoon</option>
+            <option value="evening">Evening</option>
+            <option value="night">Night</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Desired Impression</label>
+          <select
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            value={quizData.desiredImpression}
+            onChange={(e) => updateQuizData('desiredImpression', e.target.value)}
+          >
+            <option value="confident">Confident</option>
+            <option value="elegant">Elegant</option>
+            <option value="playful">Playful</option>
+            <option value="mysterious">Mysterious</option>
+            <option value="professional">Professional</option>
+            <option value="romantic">Romantic</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="text-center mt-8">
+        <Button
+          onClick={handleQuizSubmit}
+          disabled={loading}
+          size="lg"
+          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-8 py-4 shadow-lg transform hover:scale-105 transition-all duration-300"
+        >
+          {loading ? (
+            <>
+              <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+              Finding Your Perfect Match...
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-5 w-5 mr-2" />
+              Get My Recommendations
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Results Display
+  const renderResults = () => {
+    if (!recommendations) return null;
+
+    return (
+      <div className="space-y-8">
+        {/* Personality Analysis */}
+        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+          <CardContent className="p-8">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full mb-4">
+                <User className="h-10 w-10 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 font-serif mb-2">
+                {recommendations.personalityAnalysis.scentPersonality}
+              </h2>
+              <div className="flex flex-wrap justify-center gap-2 mb-4">
+                {recommendations.personalityAnalysis.keyTraits.map((trait, index) => (
+                  <Badge key={index} variant="outline" className="border-purple-300 text-purple-700">
+                    {trait}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-gray-700 max-w-2xl mx-auto mb-6">
+                {recommendations.personalityAnalysis.styleDescription}
+              </p>
+              <p className="text-sm text-purple-800 italic">
+                {recommendations.personalityAnalysis.recommendationStyle}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recommendations */}
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900 font-serif mb-6 text-center">
+            Your Perfect Fragrance Matches
+          </h3>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {recommendations.results.map((result, index) => (
+              <Card key={index} className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
+                {/* Rank Badge */}
+                <div className="absolute top-4 right-4 z-10">
+                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                    #{result.rank}
+                  </div>
+                </div>
+
+                {/* Match Score */}
+                <div className="absolute top-4 left-4 z-10">
+                  <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold">
+                    {Math.round(result.overallScore * 100)}% Match
+                  </Badge>
+                </div>
+
+                <div className="relative">
+                  <div className="h-64 bg-gradient-to-br from-purple-100 to-blue-100 relative overflow-hidden">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full mx-auto mb-3 flex items-center justify-center">
+                          <Sparkles className="h-10 w-10 text-white" />
+                        </div>
+                        <p className="text-gray-700 font-medium">{result.perfume.brand}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <CardContent className="p-6">
+                  <h4 className="text-xl font-bold text-gray-900 font-serif mb-2">{result.perfume.name}</h4>
+                  <p className="text-sm text-gray-600 mb-4">{result.perfume.description}</p>
+
+                  {/* Detailed Score Breakdown */}
+                  <div className="mb-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Profile Match</span>
+                      <span className="font-semibold text-purple-600">{Math.round(result.profileMatch * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${result.profileMatch * 100}%` }} />
+                    </div>
+
+                    <div className="flex justify-between text-sm">
+                      <span>Season Match</span>
+                      <span className="font-semibold text-blue-600">{Math.round(result.seasonMatch * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${result.seasonMatch * 100}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Match Reasons */}
+                  {result.matchReasons.length > 0 && (
+                    <div className="mb-4">
+                      <h5 className="font-semibold text-gray-900 mb-2">Why it matches:</h5>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        {result.matchReasons.map((reason, i) => (
+                          <li key={i} className="flex items-start">
+                            <Star className="h-3 w-3 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                            {reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Best For */}
+                  {result.bestFor.length > 0 && (
+                    <div className="mb-4">
+                      <h5 className="font-semibold text-gray-900 mb-2">Perfect for:</h5>
+                      <div className="flex flex-wrap gap-1">
+                        {result.bestFor.map((use, i) => (
+                          <Badge key={i} variant="outline" size="sm">
+                            {use}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-2xl font-bold text-gray-900">${result.perfume.price}</div>
+                    <Link to={`/catalog`}>
+                      <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
+                        View Details
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Tips */}
+        {recommendations.tips.length > 0 && (
+          <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 border-orange-200">
+            <CardContent className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 font-serif mb-4 flex items-center">
+                <Sparkles className="h-6 w-6 text-yellow-600 mr-2" />
+                Pro Tips for Your Fragrance Journey
+              </h3>
+              <ul className="space-y-2">
+                {recommendations.tips.map((tip, index) => (
+                  <li key={index} className="flex items-start text-gray-700">
+                    <Star className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                    {tip}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Action Buttons */}
+        <div className="text-center space-x-4">
+          <Button onClick={resetQuiz} variant="outline" size="lg">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Take Quiz Again
+          </Button>
+          <Link to="/catalog">
+            <Button size="lg">
+              Browse Full Collection
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="py-8">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white py-12 relative overflow-hidden">
+          <div className="absolute inset-0 bg-black opacity-30"></div>
+
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0">
+            <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mix-blend-screen filter blur-2xl opacity-30 animate-bounce"></div>
+            <div className="absolute top-20 right-20 w-40 h-40 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full mix-blend-screen filter blur-3xl opacity-25 animate-pulse"></div>
+            <div className="absolute bottom-10 left-1/4 w-24 h-24 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full mix-blend-screen filter blur-xl opacity-20 animate-bounce" style={{ animationDelay: '1s' }}></div>
+          </div>
+
+          <div className="relative max-w-4xl mx-auto px-4 text-center">
+            <h1 className="text-4xl md:text-5xl font-bold font-serif mb-4">
+              {!recommendations ? 'Find Your Perfect' : 'Your Perfect'}
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">
+                {!recommendations ? 'Signature Scent' : 'Fragrance Matches'}
+              </span>
+            </h1>
+            <p className="text-xl text-gray-300">
+              {!recommendations
+                ? 'Take our personalized quiz and discover fragrances that truly represent you'
+                : 'Based on your personality and preferences, here are your perfect matches'
+              }
+            </p>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          {/* Progress Indicator */}
+          {!recommendations && renderProgress()}
+
+          {/* Quiz Content */}
+          {!recommendations && !loading && (
+            <Card className="shadow-xl bg-white border-0">
+              <CardContent className="p-8">
+                {step === 1 && renderBasicInfo()}
+                {step === 2 && renderOccasionSeason()}
+                {step === 3 && renderScentPreferences()}
+                {step === 4 && renderCurrentSituation()}
+
+                {/* Navigation */}
+                <div className="flex justify-between mt-8">
+                  <Button
+                    onClick={handlePrevious}
+                    disabled={step === 1}
+                    variant="outline"
+                    size="lg"
+                    className="font-semibold"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Previous
+                  </Button>
+
+                  {step < totalSteps && (
+                    <Button
+                      onClick={handleNext}
+                      size="lg"
+                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-12">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-purple-100 rounded-full mb-6">
+                <RefreshCw className="h-10 w-10 text-purple-600 animate-spin" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Analyzing Your Fragrance DNA...
+              </h3>
+              <p className="text-gray-600 mb-8">
+                Our AI is creating your personalized scent profile and finding perfect matches
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                {[...Array(3)].map((_, i) => (
+                  <LoadingSkeleton key={i} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Results */}
+          {recommendations && !loading && renderResults()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EnhancedRecommendations;

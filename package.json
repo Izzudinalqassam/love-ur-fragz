@@ -1,0 +1,32 @@
+{
+  "name": "luxscents-perfume-website",
+  "version": "1.0.0",
+  "description": "Luxury perfume website with recommendation system",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && go run cmd/server/main.go cmd/server/seed.go",
+    "dev:enhanced": "node start-dev.js",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && go build -o luxscents-server cmd/server/main.go",
+    "install:deps": "cd frontend && npm install && cd ../backend && go mod download",
+    "start": "node start-dev.js",
+    "check": "echo 'Checking ports...' && npm run check:ports && npm run check:deps",
+    "check:ports": "netstat -an | grep :5173 || echo 'Frontend port available' && netstat -an | grep :8080 || echo 'Backend port available'",
+    "check:deps": "cd frontend && npm list --depth=0 && cd ../backend && go mod verify"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.2",
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "perfume",
+    "fragrance",
+    "recommendation",
+    "react",
+    "golang",
+    "luxury"
+  ],
+  "author": "LuxScents Team",
+  "license": "MIT"
+}

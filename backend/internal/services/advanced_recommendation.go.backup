@@ -1,0 +1,618 @@
+package services
+
+import (
+	"fmt"
+	"math"
+	"sort"
+	"strings"
+	"time"
+
+	"perfume-website/internal/models"
+)
+
+// Advanced Recommendation Algorithm with Multi-Factor Analysis
+type AdvancedRecommendationService struct {
+	perfumeService PerfumeService
+}
+
+func NewAdvancedRecommendationService(perfumeService PerfumeService) *AdvancedRecommendationService {
+	return &AdvancedRecommendationService{
+		perfumeService: perfumeService,
+	}
+}
+
+func (s *AdvancedRecommendationService) GetAdvancedRecommendations(req models.AdvancedRecommendationRequest) (*models.AdvancedRecommendationResponse, error) {
+	// 1. Analyze user personality and create scent profile
+	scentProfile := s.analyzePersonality(req.QuizPreferences)
+
+	// 2. Get all perfumes with detailed information
+	perfumes, err := s.perfumeService.GetAllPerfumesWithRelations()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get perfumes: %w", err)
+	}
+
+	// 3. Score each perfume using multi-factor algorithm
+	scores := s.scorePerfumes(perfumes, req, scentProfile)
+
+	// 4. Filter and sort results
+	results := s.filterAndSortResults(scores, req)
+
+	// 5. Generate detailed explanations
+	response := s.generateDetailedResponse(results, scentProfile, req)
+
+	return response, nil
+}
+
+func (s *AdvancedRecommendationService) analyzePersonality(pref models.QuizPreferences) models.ScentProfile {
+	profile := models.ScentProfile{
+		PrimaryFamilies:   make([]string, 0),
+		SecondaryFamilies: make([]string, 0),
+		PreferredNotes:    make([]string, 0),
+		AvoidedNotes:      make([]string, 0),
+	}
+
+	// Determine scent families based on preferences
+	if pref.LightFresh {
+		profile.PrimaryFamilies = append(profile.PrimaryFamilies, "Fresh Scent", "Citrus Aromatic", "Aromatic")
+		profile.PreferredNotes = append(profile.PreferredNotes, "Bergamot", "Lemon", "Neroli", "Green Tea")
+		profile.EnergyLevel = 0.8
+	}
+	if pref.WarmSpicy {
+		profile.PrimaryFamilies = append(profile.PrimaryFamilies, "Woody Spicy", "Amber Spicy", "Oriental Spicy")
+		profile.PreferredNotes = append(profile.PreferredNotes, "Black Pepper", "Cardamom", "Cinnamon", "Patchouli")
+		profile.AdventurousLevel = 0.7
+	}
+	if pref.SweetGourmand {
+		profile.PrimaryFamilies = append(profile.PrimaryFamilies, "Gourmand", "Vanilla Gourmand", "Fruity Gourmand")
+		profile.PreferredNotes = append(profile.PreferredNotes, "Vanilla", "Cacao", "Praline", "Tonka Bean")
+		profile.RomanceLevel = 0.8
+	}
+	if pref.WoodyEarthy {
+		profile.PrimaryFamilies = append(profile.PrimaryFamilies, "Woody Aromatic", "Woody", "Leather")
+		profile.PreferredNotes = append(profile.PreferredNotes, "Sandalwood", "Cedarwood", "Vetiver", "Oakmoss")
+		profile.EleganceLevel = 0.7
+	}
+	if pref.FloralRomantic {
+		profile.PrimaryFamilies = append(profile.PrimaryFamilies, "Floriental", "Floral", "Amber Floral")
+		profile.PreferredNotes = append(profile.PreferredNotes, "Rose", "Jasmine", "Tuberose", "Peony")
+		profile.RomanceLevel = 0.9
+	}
+	if pref.CitrusEnergizing {
+		profile.PrimaryFamilies = append(profile.PrimaryFamilies, "Citrus Aromatic", "Fresh Scent")
+		profile.PreferredNotes = append(profile.PreferredNotes, "Lemon", "Bergamot", "Grapefruit", "Mandarin")
+		profile.EnergyLevel = 0.9
+	}
+
+	// Calculate seasonal weights
+	profile.SpringWeight = s.calculateSeasonWeight(pref.Spring, pref.Summer, pref.Fall, pref.Winter, pref.YearRound, "spring")
+	profile.SummerWeight = s.calculateSeasonWeight(pref.Spring, pref.Summer, pref.Fall, pref.Winter, pref.YearRound, "summer")
+	profile.FallWeight = s.calculateSeasonWeight(pref.Spring, pref.Summer, pref.Fall, pref.Winter, pref.YearRound, "fall")
+	profile.WinterWeight = s.calculateSeasonWeight(pref.Spring, pref.Summer, pref.Fall, pref.Winter, pref.YearRound, "winter")
+
+	// Calculate occasion weights
+	totalOccasions := 0
+	if pref.DailyWear { totalOccasions++; profile.CasualWeight += 0.8 }
+	if pref.SpecialEvents { totalOccasions++; profile.FormalWeight += 0.9 }
+	if pref.NightOut { totalOccasions++; profile.EveningWeight += 0.9 }
+	if pref.Work { totalOccasions++; profile.ProfessionalWeight += 0.7 }
+	if pref.Dates { totalOccasions++; profile.EveningWeight += 0.8; profile.RomanceLevel += 0.2 }
+
+	if totalOccasions > 0 {
+		profile.CasualWeight /= float64(totalOccasions)
+		profile.FormalWeight /= float64(totalOccasions)
+		profile.EveningWeight /= float64(totalOccasions)
+		profile.ProfessionalWeight /= float64(totalOccasions)
+	}
+
+	// Personality trait normalization
+	if profile.AdventurousLevel == 0 { profile.AdventurousLevel = 0.5 }
+	if profile.EleganceLevel == 0 { profile.EleganceLevel = 0.5 }
+	if profile.EnergyLevel == 0 { profile.EnergyLevel = 0.5 }
+	if profile.RomanceLevel == 0 { profile.RomanceLevel = 0.5 }
+
+	return profile
+}
+
+func (s *AdvancedRecommendationService) calculateSeasonWeight(spring, summer, fall, winter, yearRound bool, season string) float64 {
+	if yearRound {
+		return 0.25 // Equal weight for all seasons
+	}
+
+	switch season {
+	case "spring":
+		if spring { return 0.8 }
+		if summer { return 0.6 } // Summer scents often work in spring
+		if fall { return 0.4 }
+		if winter { return 0.2 }
+	case "summer":
+		if summer { return 0.8 }
+		if spring { return 0.6 }
+		if fall { return 0.3 }
+		if winter { return 0.1 }
+	case "fall":
+		if fall { return 0.8 }
+		if winter { return 0.6 }
+		if spring { return 0.4 }
+		if summer { return 0.2 }
+	case "winter":
+		if winter { return 0.8 }
+		if fall { return 0.6 }
+		if spring { return 0.3 }
+		if summer { return 0.1 }
+	}
+
+	return 0.25 // Default weight
+}
+
+func (s *AdvancedRecommendationService) scorePerfumes(perfumes []models.Perfume, req models.AdvancedRecommendationRequest, profile models.ScentProfile) []models.PerfumeScore {
+	scores := make([]models.PerfumeScore, 0)
+
+	for _, perfume := range perfumes {
+		score := s.calculatePerfumeScore(perfume, req, profile)
+		if score.OverallScore > 0.1 { // Minimum threshold
+			scores = append(scores, score)
+		}
+	}
+
+	return scores
+}
+
+func (s *AdvancedRecommendationService) calculatePerfumeScore(perfume models.Perfume, req models.AdvancedRecommendationRequest, profile models.ScentProfile) models.PerfumeScore {
+	score := models.PerfumeScore{
+		Perfume: perfume,
+		PerfumeID: perfume.ID,
+	}
+
+	// 1. Profile Match (40% weight)
+	profileMatch := s.calculateProfileMatch(perfume, profile)
+	score.ProfileMatch = profileMatch
+
+	// 2. Season Match (20% weight)
+	seasonMatch := s.calculateSeasonMatch(perfume, req.Season)
+	score.SeasonMatch = seasonMatch
+
+	// 3. Occasion Match (20% weight)
+	occasionMatch := s.calculateOccasionMatch(perfume, req.CurrentSituation)
+	score.OccasionMatch = occasionMatch
+
+	// 4. Performance Match (10% weight)
+	performanceMatch := s.calculatePerformanceMatch(perfume, req.QuizPreferences)
+	score.PerformanceMatch = performanceMatch
+
+	// 5. Uniqueness Bonus (10% weight)
+	uniquenessBonus := s.calculateUniquenessBonus(perfume, profile)
+	score.UniquenessBonus = uniquenessBonus
+
+	// Calculate weighted overall score
+	score.OverallScore = (profileMatch * 0.4) + (seasonMatch * 0.2) + (occasionMatch * 0.2) +
+		(performanceMatch * 0.1) + (uniquenessBonus * 0.1)
+
+	// Generate match reasons and warnings
+	score.MatchReasons, score.Warnings = s.generateMatchReasons(perfume, score, profile)
+	score.BestFor = s.generateBestFor(profile, score)
+	score.WearTiming = s.generateWearTiming(score, req)
+	score.Longevity = perfume.Longevity
+	score.Projection = fmt.Sprintf("%.0f%%", perfume.Sillage)
+
+	// Calculate confidence based on score variance
+	score.Confidence = s.calculateConfidence(score)
+
+	return score
+}
+
+func (s *AdvancedRecommendationService) calculateProfileMatch(perfume models.Perfume, profile models.ScentProfile) float64 {
+	match := 0.0
+
+	// Check if perfume category matches primary families
+	for _, family := range profile.PrimaryFamilies {
+		if strings.Contains(strings.ToLower(perfume.Category), strings.ToLower(family)) {
+			match += 0.5
+		}
+	}
+
+	// Check secondary families
+	for _, family := range profile.SecondaryFamilies {
+		if strings.Contains(strings.ToLower(perfume.Category), strings.ToLower(family)) {
+			match += 0.3
+		}
+	}
+
+	// Check preferred notes in perfume notes
+	for _, note := range perfume.Notes {
+		for _, preferredNote := range profile.PreferredNotes {
+			if strings.Contains(strings.ToLower(note.NoteName), strings.ToLower(preferredNote)) {
+				match += 0.2
+			}
+		}
+	}
+
+	return math.Min(match, 1.0)
+}
+
+func (s *AdvancedRecommendationService) calculateSeasonMatch(perfume models.Perfume, season string) float64 {
+	seasonalSuitability := map[string]map[string]float64{
+		"Woody Spicy":      {"spring": 0.7, "summer": 0.3, "fall": 1.0, "winter": 1.0},
+		"Floriental":       {"spring": 1.0, "summer": 0.8, "fall": 0.8, "winter": 0.6},
+		"Woody Aromatic":  {"spring": 0.8, "summer": 0.6, "fall": 1.0, "winter": 0.9},
+		"Amber Floral":     {"spring": 0.8, "summer": 0.4, "fall": 1.0, "winter": 1.0},
+		"Floral Fruity":    {"spring": 1.0, "summer": 1.0, "fall": 0.7, "winter": 0.3},
+		"Fresh Scent":      {"spring": 1.0, "summer": 1.0, "fall": 0.6, "winter": 0.4},
+		"Citrus Aromatic":  {"spring": 1.0, "summer": 1.0, "fall": 0.5, "winter": 0.3},
+	}
+
+	if suitability, exists := seasonalSuitability[perfume.Category]; exists {
+		return suitability[season]
+	}
+
+	return 0.5 // Default moderate suitability
+}
+
+func (s *AdvancedRecommendationService) calculateOccasionMatch(perfume models.Perfume, occasion string) float64 {
+	occasionSuitability := map[string]map[string]float64{
+		"Woody Spicy":      {"casual": 0.8, "formal": 0.7, "evening": 1.0, "work": 0.6},
+		"Floriental":       {"casual": 0.7, "formal": 0.9, "evening": 1.0, "work": 0.7},
+		"Woody Aromatic":  {"casual": 0.9, "formal": 0.8, "evening": 0.7, "work": 0.9},
+		"Amber Floral":     {"casual": 0.6, "formal": 1.0, "evening": 1.0, "work": 0.5},
+		"Fresh Scent":      {"casual": 1.0, "formal": 0.7, "evening": 0.5, "work": 0.9},
+		"Citrus Aromatic":  {"casual": 1.0, "formal": 0.8, "evening": 0.6, "work": 0.9},
+	}
+
+	if suitability, exists := occasionSuitability[perfume.Category]; exists {
+		return suitability[occasion]
+	}
+
+	return 0.5 // Default moderate suitability
+}
+
+func (s *AdvancedRecommendationService) calculatePerformanceMatch(perfume models.Perfume, pref models.QuizPreferences) float64 {
+	match := 0.5 // Base score
+
+	// Longevity preference matching
+	longevityMap := map[string]int{
+		"light":  40,
+		"medium": 60,
+		"long":   80,
+	}
+
+	if preferredLongevity, exists := longevityMap[pref.Longevity]; exists {
+		diff := math.Abs(float64(perfume.Longevity - preferredLongevity))
+		longevityScore := 1.0 - (diff / 80.0) // Normalize to 0-1
+		match += longevityScore * 0.5
+	}
+
+	// Sillage preference matching
+	sillageMap := map[string]int{
+		"subtle":  30,
+		"moderate": 60,
+		"heavy":   80,
+	}
+
+	if preferredSillage, exists := sillageMap[pref.Sillage]; exists {
+		diff := math.Abs(float64(perfume.Sillage - preferredSillage))
+		sillageScore := 1.0 - (diff / 80.0) // Normalize to 0-1
+		match += sillageScore * 0.5
+	}
+
+	return math.Min(match, 1.0)
+}
+
+func (s *AdvancedRecommendationService) calculateUniquenessBonus(perfume models.Perfume, profile models.ScentProfile) float64 {
+	bonus := 0.0
+
+	// Bonus for unique categories
+	uniqueCategories := []string{"Oud", "Leather", "Incense", "Chypre", "Fougere"}
+	for _, unique := range uniqueCategories {
+		if strings.Contains(strings.ToLower(perfume.Category), strings.ToLower(unique)) {
+			bonus += 0.3
+		}
+	}
+
+	// Adventure bonus
+	if profile.AdventurousLevel > 0.7 {
+		// Bonus for less common categories
+		if perfume.Category != "Floriental" && perfume.Category != "Woody Spicy" {
+			bonus += 0.2
+		}
+	}
+
+	return math.Min(bonus, 1.0)
+}
+
+func (s *AdvancedRecommendationService) generateMatchReasons(perfume models.Perfume, score models.PerfumeScore, profile models.ScentProfile) ([]string, []string) {
+	reasons := make([]string, 0)
+	warnings := make([]string, 0)
+
+	// High score reasons
+	if score.ProfileMatch > 0.8 {
+		reasons = append(reasons, "Perfect match for your scent preferences")
+	}
+	if score.SeasonMatch > 0.8 {
+		reasons = append(reasons, "Ideal for current season")
+	}
+	if score.OccasionMatch > 0.8 {
+		reasons = append(reasons, "Perfect for the occasion")
+	}
+	if score.PerformanceMatch > 0.8 {
+		reasons = append(reasons, "Matches your performance preferences")
+	}
+	if score.UniquenessBonus > 0.5 {
+		reasons = append(reasons, "Unique and distinctive scent")
+	}
+
+	// Specific category-based reasons
+	switch perfume.Category {
+	case "Woody Spicy":
+		reasons = append(reasons, "Warm and sophisticated - perfect for confident personalities")
+	case "Floriental":
+		reasons = append(reasons, "Romantic and elegant - timeless feminine appeal")
+	case "Fresh Scent":
+		reasons = append(reasons, "Clean and refreshing - perfect for daily wear")
+	case "Citrus Aromatic":
+		reasons = append(reasons, "Energizing and uplifting - boosts your confidence")
+	}
+
+	// Warnings
+	if score.ProfileMatch < 0.3 {
+		warnings = append(warnings, "May not align with your usual preferences")
+	}
+	if score.SeasonMatch < 0.3 {
+		warnings = append(warnings, "Better suited for a different season")
+	}
+	if perfume.Sillage > 70 {
+		warnings = append(warnings, "Strong projection - may be overwhelming in close spaces")
+	}
+
+	return reasons, warnings
+}
+
+func (s *AdvancedRecommendationService) generateBestFor(profile models.ScentProfile, score models.PerfumeScore) []string {
+	bestFor := make([]string, 0)
+
+	if score.EveningWeight > 0.7 {
+		bestFor = append(bestFor, "Evening Wear")
+	}
+	if score.CasualWeight > 0.7 {
+		bestFor = append(bestFor, "Casual Outings")
+	}
+	if score.FormalWeight > 0.7 {
+		bestFor = append(bestFor, "Special Events")
+	}
+	if score.ProfessionalWeight > 0.7 {
+		bestFor = append(bestFor, "Work Environment")
+	}
+
+	if profile.RomanceLevel > 0.7 {
+		bestFor = append(bestFor, "Date Nights")
+	}
+	if profile.EnergyLevel > 0.7 {
+		bestFor = append(bestFor, "Daytime Activities")
+	}
+
+	return bestFor
+}
+
+func (s *AdvancedRecommendationService) generateWearTiming(score models.PerfumeScore, req models.AdvancedRecommendationRequest) []string {
+	timing := make([]string, 0)
+
+	// Based on occasion
+	switch req.CurrentSituation {
+	case "work":
+		timing = append(timing, "Morning application", "Lasts through workday")
+	case "date":
+		timing = append(timing, "Apply 30 mins before", "Perfect for evening")
+	case "casual":
+		timing = append(timing, "Any time of day", "Versatile wear")
+	case "special":
+		timing = append(timing, "Apply 1 hour before event", "Long-lasting for special moments")
+	}
+
+	// Based on longevity
+	if score.Perfume.Longevity > 70 {
+		timing = append(timing, "Single application lasts all day")
+	} else if score.Perfume.Longevity < 50 {
+		timing = append(timing, "Reapply every 4-6 hours")
+	}
+
+	return timing
+}
+
+func (s *AdvancedRecommendationService) calculateConfidence(score models.PerfumeScore) float64 {
+	// Calculate variance in scores
+	scores := []float64{score.ProfileMatch, score.SeasonMatch, score.OccasionMatch, score.PerformanceMatch}
+	mean := (scores[0] + scores[1] + scores[2] + scores[3]) / 4.0
+
+	variance := 0.0
+	for _, s := range scores {
+		variance += math.Pow(s-mean, 2)
+	}
+	variance /= 4.0
+	stdDev := math.Sqrt(variance)
+
+	// Higher confidence for consistent scores
+	confidence := 1.0 - (stdDev * 0.5)
+
+	// Boost confidence based on overall score
+	if score.OverallScore > 0.8 {
+		confidence *= 1.1
+	}
+
+	return math.Min(confidence, 1.0)
+}
+
+func (s *AdvancedRecommendationService) filterAndSortResults(scores []models.PerfumeScore, req models.AdvancedRecommendationRequest) []models.AdvancedRecommendationResult {
+	// Filter out excluded IDs
+	filtered := make([]models.PerfumeScore, 0)
+	for _, score := range scores {
+		excluded := false
+		for _, excludeID := range req.ExcludeIDs {
+			if score.PerfumeID == excludeID {
+				excluded = true
+				break
+			}
+		}
+		if !excluded {
+			filtered = append(filtered, score)
+		}
+	}
+
+	// Sort by overall score (descending)
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].OverallScore > filtered[j].OverallScore
+	})
+
+	// Limit results
+	maxResults := req.MaxResults
+	if maxResults <= 0 {
+		maxResults = 6
+	}
+	if len(filtered) > maxResults {
+		filtered = filtered[:maxResults]
+	}
+
+	// Convert to AdvancedRecommendationResult
+	results := make([]models.AdvancedRecommendationResult, len(filtered))
+	for i, score := range filtered {
+		results[i] = models.AdvancedRecommendationResult{
+			Perfume:          score.Perfume,
+			OverallScore:     score.OverallScore,
+			ProfileMatch:     score.ProfileMatch,
+			SeasonMatch:      score.SeasonMatch,
+			OccasionMatch:    score.OccasionMatch,
+			PerformanceMatch: score.PerformanceMatch,
+			UniquenessBonus:  score.UniquenessBonus,
+			MatchReasons:     score.MatchReasons,
+			Warnings:         score.Warnings,
+			BestFor:          score.BestFor,
+			WearTiming:       score.WearTiming,
+			Longevity:        s.mapLongevityToText(score.Perfume.Longevity),
+			Projection:       s.mapProjectionToText(score.Perfume.Sillage),
+			Confidence:       score.Confidence,
+			Rank:             i + 1,
+		}
+	}
+
+	return results
+}
+
+func (s *AdvancedRecommendationService) mapLongevityToText(longevity int) string {
+	if longevity >= 70 {
+		return "Long-lasting (8+ hours)"
+	} else if longevity >= 50 {
+		return "Moderate (6-8 hours)"
+	} else {
+		return "Light (4-6 hours)"
+	}
+}
+
+func (s *AdvancedRecommendationService) mapProjectionToText(sillage int) string {
+	if sillage >= 70 {
+		return "Heavy - Noticeable from afar"
+	} else if sillage >= 50 {
+		return "Moderate - Noticeable in close proximity"
+	} else {
+		return "Subtle - Close to skin"
+	}
+}
+
+func (s *AdvancedRecommendationService) generateDetailedResponse(results []models.AdvancedRecommendationResult, profile models.ScentProfile, req models.AdvancedRecommendationRequest) *models.AdvancedRecommendationResponse {
+	response := &models.AdvancedRecommendationResponse{
+		Results: results,
+	}
+
+	// Generate personality analysis
+	response.PersonalityAnalysis = s.generatePersonalityAnalysis(profile)
+
+	// Generate recommendation logic explanation
+	response.RecommendationLogic = models.RecommendationLogic{
+		Algorithm:          "Multi-Factor Advanced Recommendation v2.0",
+		FactorsConsidered:  []string{"Profile Match", "Season Suitability", "Occasion Appropriateness", "Performance Preferences", "Uniqueness Factor"},
+		Weighting:          map[string]float64{"Profile Match": 0.4, "Season Match": 0.2, "Occasion Match": 0.2, "Performance Match": 0.1, "Uniqueness Bonus": 0.1},
+		ProcessDescription: "Our advanced algorithm analyzes your personality traits, scent preferences, and the specific context to find perfect fragrance matches. Each perfume is scored across multiple dimensions and ranked by overall compatibility.",
+	}
+
+	// Generate personalized tips
+	response.Tips = s.generatePersonalizedTips(profile, req)
+
+	// Generate alternatives
+	response.Alternatives = s.generateAlternatives(results, profile)
+
+	return response
+}
+
+func (s *AdvancedRecommendationService) generatePersonalityAnalysis(profile models.ScentProfile) models.PersonalityAnalysis {
+	personality := models.PersonalityAnalysis{
+		KeyTraits: make([]string, 0),
+	}
+
+	// Determine scent personality
+	if profile.RomanceLevel > 0.7 && profile.EleganceLevel > 0.7 {
+		personality.ScentPersonality = "The Romantic Elegant"
+		personality.KeyTraits = append(personality.KeyTraits, "Sophisticated", "Charming", "Timeless")
+		personality.StyleDescription = "You appreciate classic, romantic fragrances that exude elegance and grace. Your perfect scents are timeless and feminine."
+	} else if profile.EnergyLevel > 0.7 && profile.AdventurousLevel > 0.7 {
+		personality.ScentPersonality = "The Adventurous Explorer"
+		personality.KeyTraits = append(personality.KeyTraits, "Bold", "Energetic", "Unique")
+		personality.StyleDescription = "You love discovering new and exciting scents that make a statement. Your perfect fragrances are distinctive and memorable."
+	} else if profile.ProfessionalWeight > 0.7 && profile.EleganceLevel > 0.6 {
+		personality.ScentPersonality = "The Professional Powerhouse"
+		personality.KeyTraits = append(personality.KeyTraits, "Confident", "Polished", "Ambitious")
+		personality.StyleDescription = "You prefer sophisticated, professional scents that command respect and enhance your presence in the workplace."
+	} else if profile.CasualWeight > 0.7 && profile.EnergyLevel > 0.6 {
+		personality.ScentPersonality = "The Casual Charmer"
+		personality.KeyTraits = append(personality.KeyTraits, "Approachable", "Friendly", "Versatile")
+		personality.StyleDescription = "You love versatile, everyday fragrances that are perfect for any casual occasion and make you feel confident."
+	} else {
+		personality.ScentPersonality = "The Balanced Connoisseur"
+		personality.KeyTraits = append(personality.KeyTraits, "Thoughtful", "Versatile", "Refined")
+		personality.StyleDescription = "You appreciate a balanced approach to fragrance, selecting scents that work well across different situations and moods."
+	}
+
+	personality.RecommendationStyle = fmt.Sprintf("Based on your %s personality, we recommend fragrances that reflect your %s nature.",
+		personality.ScentPersonality, strings.Join(personality.KeyTraits, ", "))
+
+	return personality
+}
+
+func (s *AdvancedRecommendationService) generatePersonalizedTips(profile models.ScentProfile, req models.AdvancedRecommendationRequest) []string {
+	tips := make([]string, 0)
+
+	// Seasonal tips
+	if req.Season == "summer" {
+		tips = append(tips, "Apply fragrance to pulse points for better longevity in hot weather")
+		tips = append(tips, "Consider lighter, fresher scents during summer months")
+	}
+
+	// Longevity tips
+	if profile.EnergyLevel > 0.7 {
+		tips = append(tips, "Layer your fragrance with matching body products for longer wear")
+	}
+
+	// Occasion tips
+	if req.CurrentSituation == "work" {
+		tips = append(tips, "Apply fragrance 15-20 minutes before arriving at work")
+		tips = append(tips, "Choose subtle scents for professional environments")
+	}
+
+	// Personality-based tips
+	if profile.AdventurousLevel > 0.7 {
+		tips = append(tips, "Don't be afraid to try unique combinations and niche fragrances")
+	}
+
+	if profile.RomanceLevel > 0.7 {
+		tips = append(tips, "Save your most romantic scents for special occasions")
+	}
+
+	return tips
+}
+
+func (s *AdvancedRecommendationService) generateAlternatives(results []models.AdvancedRecommendationResult, profile models.ScentProfile) []models.Perfume {
+	alternatives := make([]models.Perfume, 0)
+
+	// Get some additional perfumes for variety
+	if len(results) > 0 {
+		// This would normally fetch from database, but for now we'll return empty
+		// In a real implementation, you'd fetch perfumes that didn't make the top list
+	}
+
+	return alternatives
+}
